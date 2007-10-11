@@ -10,10 +10,12 @@ the CPAN.
 
 =cut
 
+## Note that there is a lot of code here that is just duplicated from
+## pod.t. Oh well.
+
 use strict;
 use Test::More;
 use File::Spec::Functions;
-use File::Slurp qw(read_file);
 use File::Find;
 
 plan(skip_all => "Test::Pod 1.14 required for testing POD"), exit unless
@@ -30,8 +32,33 @@ plan( tests => 3 * scalar (@files) );
 
 my $out = catfile(qw(t pod-out.tmp));
 
+sub podcheck_ok {
+    my ($file, @testcomment) = @_;
+    my $checker = new My::Pod::Checker;
+    $checker->parse_from_file($file, \*STDERR);
+    if ((my $errors = $checker->num_errors) > 0) {
+        diag("$errors errors in podchecker");
+        &fail(@testcomment);
+    } else {
+        &pod_file_ok($file, @testcomment);
+    }
+    return;
+
+    { package My::Pod::Checker; use base "Pod::Checker"; }
+
+    sub My::Pod::Checker::poderror {
+        my $self = shift;
+        my %opts = %{$_[0]};
+        diag(sprintf("%s: %s (file %s, line %d)",
+                     @opts{qw(-severity -msg -file -line)}))
+            unless ($opts{-msg} =~ m/empty section/);
+        local $self->{-quiet} = 1;
+        return $self->Pod::Checker::poderror(@_);
+    }
+}
+
 foreach my $file ( @files ) {
-    ok(podchecker($file, undef) <= 0);
+    podcheck_ok($file, "$file");
 
 =pod
 
@@ -51,3 +78,15 @@ B<not> visible in the POD (coz this just looks funny on CPAN)
 
 unlink($out);
 
+=head2 read_file
+
+Same foo as L<File::Slurp/read_file>, sans the dependency on same.
+
+=cut
+
+sub read_file {
+    my ($path) = @_;
+    local *FILE;
+    open FILE, $path or die $!;
+    return <FILE>;
+}

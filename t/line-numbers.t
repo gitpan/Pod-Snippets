@@ -10,7 +10,6 @@ line-numbers.t - Tests that Pod::Snippets numbers lines correctly
 
 use Test::More no_plan => 1;
 use Pod::Snippets;
-use File::Slurp qw(read_file);
 
 my @lines = read_file($INC{"Pod/Snippets.pm"});
 my $examples = Pod::Snippets->load($INC{"Pod/Snippets.pm"},
@@ -59,3 +58,16 @@ ok((my ($offsetline, undef) = $sniplines[0] =~ m/^#line (\d+) "(.*)"$/),
 is($offsetline, $line + 41, "line offset feature");
 
 1;
+
+=head2 read_file
+
+Same foo as L<File::Slurp/read_file>, sans the dependency on same.
+
+=cut
+
+sub read_file {
+    my ($path) = @_;
+    local *FILE;
+    open FILE, $path or die $!;
+    return <FILE>;
+}
