@@ -4,6 +4,8 @@
 # directory (using a custom-made subclass to Module::Build), which in
 # turn builds the Pod-Snippets package.
 
+require 5.006;
+
 use strict;
 use warnings;
 use Module::Build;
